@@ -1067,13 +1067,24 @@ function download(name,content,type){
   const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
 }
 async function resetAll(){
-  if(confirm('ล้างข้อมูลทั้งหมดทั้งบน Cloud และในเครื่อง? ไม่สามารถกู้คืนได้')){
-    state = {checks:{},dateStamp:todayStr(),history:SEED_HISTORY.slice(),custom:{},body:SEED_BODY.slice(),notes:{}};
-    try { await DOC_REF.delete(); } catch(e){} // ลบข้อมูลใน Firebase
-    await localforage.removeItem(STORE_KEY);   // ลบข้อมูลในเครื่อง
+  if(confirm('ล้างข้อมูลเพื่อโหลดประวัติ 54 sessions ชุดใหม่?')){
+    // บังคับสร้างก้อนข้อมูลเป็นชุดใหม่ล่าสุด (ดึงจาก SEED_HISTORY)
+    state = {
+      checks: {},
+      dateStamp: todayStr(),
+      history: SEED_HISTORY.slice(),
+      custom: {},
+      body: SEED_BODY.slice(),
+      notes: {}
+    };
+    
+    // สั่งเซฟทับขึ้น Firebase และ Local ไปตรงๆ เลย (แก้ปัญหาแอปดึงของเก่ามาทับ)
     await saveState();
+    
+    // รีเฟรชหน้าจอ
     switchPage('today');
-    showToast('ล้างข้อมูลเรียบร้อยแล้ว');
+    if(curPage==='history') renderHistory();
+    showToast('โหลดข้อมูลชุดใหม่สำเร็จ ✓');
   }
 }
 
