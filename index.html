@@ -200,7 +200,7 @@
   .plate-list-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--line);font-size:13px}
   .plate-list-row:last-child{border-bottom:none}
 
-  .toast{position:fixed;left:50%;transform:translateX(-50%) translateY(-200%);top:calc(12px + env(safe-area-inset-top));background:var(--card-done);border:0.5px solid var(--green-dim);color:var(--green);font-size:13px;padding:12px 20px;border-radius:12px;z-index:300;transition:transform 0.4s cubic-bezier(0.16,1,0.3,1);max-width:90%;text-align:center}
+  .toast{position:fixed;left:50%;transform:translateX(-50%) translateY(-200%);top:calc(12px + env(safe-area-inset-top));background:var(--card-done);border:0.5px solid var(--line2);color:var(--cream);font-size:13px;padding:12px 20px;border-radius:12px;z-index:300;transition:transform 0.4s cubic-bezier(0.16,1,0.3,1);max-width:90%;text-align:center}
   .toast.show{transform:translateX(-50%) translateY(0)}
 
   .pr-celebrate{position:fixed;inset:0;z-index:250;display:none;align-items:center;justify-content:center;background:rgba(10,8,6,0.85);backdrop-filter:blur(6px)}
@@ -509,10 +509,10 @@ const SEED_BODY=[
 ];
 
 // =========================================================
-// 1. นำข้อมูล Firebase Configuration ของคุณมาวางแทนที่ตรงนี้
+// 1. ข้อมูลเชื่อมต่อ Firebase ของคุณ (ถูกต้องแล้ว)
 // =========================================================
 const firebaseConfig = {
-apiKey: "AIzaSyB-wjKlyhB5cnBfCsGY0FdMToWBJDOLNNU",
+  apiKey: "AIzaSyB-wjKlyhB5cnBfCsGY0FdMToWBJDOLNNU",
   authDomain: "sasipong-workout.firebaseapp.com",
   projectId: "sasipong-workout",
   storageBucket: "sasipong-workout.firebasestorage.app",
@@ -536,26 +536,30 @@ let progChart=null,volChart=null,bcChart=null;
 function todayStr(){return new Date().toISOString().slice(0,10);}
 function thaiDate(d){const dt=d?new Date(d):new Date();const m=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];return `${DOW_LABELS[dt.getDay()]} ${dt.getDate()} ${m[dt.getMonth()]}`;}
 
-// ฟังก์ชันเซฟข้อมูลขึ้น Cloud และสำรองลงเครื่อง (IndexedDB)
+// ฟังก์ชันเซฟข้อมูลขึ้น Cloud และสำรองลงเครื่อง 
 async function saveState(){
   try{ 
-    await DOC_REF.set(state); // อัปเดตข้อมูลขึ้น Firebase
-    await localforage.setItem(STORE_KEY, state); // เก็บสำรองไว้ในเครื่อง
+    await DOC_REF.set(state); 
+    await localforage.setItem(STORE_KEY, state); 
   }catch(e){ 
     console.error('Cloud save error, fallback to local:', e); 
+    // หาก Firebase ติด Rules ระบบจะเซฟลงเครื่องแล้วเด้งเตือนสีแดงให้ทราบ
+    showToast('⚠️ Offline: บันทึกลงเครื่องแล้ว (เช็คเน็ต / Rules)');
     await localforage.setItem(STORE_KEY, state);
   }
 }
 
-// ฟังก์ชันดึงข้อมูลและเฝ้าดูการเปลี่ยนแปลงจาก Cloud แบบ Real-time
+// ฟังก์ชันดึงข้อมูลแบบ Real-time
 function initApp() {
   DOC_REF.onSnapshot(async (doc) => {
-    if (doc.exists) {
+    // ดึงข้อมูลกรณีที่การเชื่อมต่อสมบูรณ์
+    const isExists = typeof doc.exists === 'function' ? doc.exists() : doc.exists;
+    if (isExists) {
       state = doc.data();
     } else {
       const local = await localforage.getItem(STORE_KEY);
       state = local || {checks:{},dateStamp:todayStr(),history:SEED_HISTORY.slice(),custom:{},body:SEED_BODY.slice(),notes:{}};
-      await saveState(); // ส่งข้อมูลเริ่มต้นขึ้น Cloud
+      await saveState(); 
     }
 
     if(!state.history)state.history=SEED_HISTORY.slice();
@@ -577,7 +581,12 @@ function initApp() {
     if(curPage==='body') renderBody();
 
   }, async (error) => {
-    console.error("Firebase listen failed, using offline local storage:", error);
+    // 🔴 โค้ดส่วนนี้จะทำงานเมื่อ Firebase เตะเราออกเนื่องจากติดปัญหา "Rules"
+    console.error("Firebase listen failed:", error);
+    setTimeout(() => {
+        showToast('🔴 Offline: โดนบล็อกการซิงค์ (โปรดเช็คแท็บ Rules บน Firebase)');
+    }, 1500);
+
     const local = await localforage.getItem(STORE_KEY);
     state = local || {checks:{},dateStamp:todayStr(),history:SEED_HISTORY.slice(),custom:{},body:SEED_BODY.slice(),notes:{}};
     buildDaypick();
@@ -1062,7 +1071,7 @@ function stopRest(){
   document.getElementById('timer').classList.remove('show','urgent');
 }
 
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 function resetDay(){const all=[...getWorkout(cur).ex,...getWorkout(cur).bonus];state.checks[cur]=all.map(e=>new Array(e.sets).fill(false));saveState();renderToday();showToast('ล้างเซตแล้ว');}
 
 // เริ่มต้นแอปพลิเคชันและเชื่อมต่อ Cloud
