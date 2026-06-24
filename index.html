@@ -11,7 +11,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
 <style>
   :root{
     --bg:#0A0806;--bg2:#13100B;--card:#16120C;--card-done:#13190F;
@@ -78,7 +83,7 @@
   .plate-btn svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2}
 
   .dots{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap;align-items:center}
-  /* ขยายขนาด Touch Target ของ .dot จาก 42px เป็น 48px เพื่อให้กดง่ายขึ้น */
+  /* ขยายขนาด Touch Target .dot จาก 42px เป็น 48px */
   .dot{width:48px;height:48px;border-radius:50%;border:1.5px solid #4A3C26;background:transparent;color:var(--faint);font-family:'Oswald',sans-serif;font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0}
   .dot:active{transform:scale(0.92)}
   .dot.fill{background:var(--gold);border-color:var(--gold);color:#16120C}
@@ -117,7 +122,7 @@
   .btn-save{border-color:var(--gold);background:var(--gold);color:#16120C}
   .btn-ghost{border-color:var(--line2);background:transparent;color:var(--faint);flex:0 0 auto;padding:14px 16px}
 
-  /* ปรับแถบ Nav ด้านล่างให้ขยายระยะพื้นที่กดเพิ่มขึ้นบนอุปกรณ์สัมผัส */
+  /* ปรับแถบ Nav ให้สูงขึ้นเพื่อกดง่ายบน iPad/มือถือ */
   .nav{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:480px;background:rgba(10,8,6,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:0.5px solid var(--line2);display:flex;padding:8px 0 calc(8px + env(safe-area-inset-bottom));z-index:90}
   .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;color:var(--faint);cursor:pointer;padding:10px 0;font-family:'Inter',sans-serif;min-height:48px}
   .nav-item.on{color:var(--gold)}
@@ -144,7 +149,7 @@
   .hist-detail-inner{margin-top:12px;padding-top:12px;border-top:0.5px solid var(--line)}
   .hist-ex-row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:13px}
   .hist-ex-name{color:var(--cream)}
-  .hist-ex-val覆{color:var(--gold);font-family:'Oswald',sans-serif;font-weight:500;white-space:nowrap}
+  .hist-ex-val{color:var(--gold);font-family:'Oswald',sans-serif;font-weight:500;white-space:nowrap}
   .hist-note{font-size:12px;font-style:italic;color:var(--faint);margin-top:10px;padding:9px 11px;background:var(--bg2);border-radius:8px}
 
   .add-log-btn{width:100%;padding:14px;border:0.5px dashed var(--gold-dim);border-radius:12px;background:rgba(200,162,60,0.04);color:var(--gold);font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;margin-bottom:18px;display:flex;align-items:center;justify-content:center;gap:8px}
@@ -369,7 +374,7 @@
       <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJson(event)">
     </div>
     <div style="font-size:11px;color:var(--faint);line-height:1.6;margin-top:14px">
-      ข้อมูลทั้งหมดจัดเก็บในฐานข้อมูลเครื่อง (IndexedDB) ข้อมูลจะไม่หายเมื่อล้าง Cache แต่แนะนำให้ Backup แฟ้ม .json เป็นระยะเพื่อความปลอดภัย
+      ข้อมูลซิงค์อัตโนมัติกับฐานข้อมูล Cloud (Firebase) และจัดเก็บสำรองในเครื่อง (IndexedDB) เพื่อรองรับการใช้งานออฟไลน์
     </div>
   </div>
   <div class="ex" style="cursor:default;margin-top:12px">
@@ -503,7 +508,25 @@ const SEED_BODY=[
   {date:'2026-06-20',weight:68.95,fat:19.5,muscle:52.65,visceral:9,score:94},
 ];
 
-// จัดการสถานะแอปพลิเคชันแบบ Reactive ร่วมกับ IndexedDB
+// =========================================================
+// 1. นำข้อมูล Firebase Configuration ของคุณมาวางแทนที่ตรงนี้
+// =========================================================
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+// =========================================================
+// เริ่มต้นใช้งาน Firebase
+// =========================================================
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const DOC_REF = db.collection("workout_app").doc("user_state");
+
 let state=null;
 let cur=null,curPage='today',curStatsTab='pr';
 let restTimer=null,restLeft=90,restTotal=90;
@@ -512,30 +535,53 @@ let progChart=null,volChart=null,bcChart=null;
 function todayStr(){return new Date().toISOString().slice(0,10);}
 function thaiDate(d){const dt=d?new Date(d):new Date();const m=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];return `${DOW_LABELS[dt.getDay()]} ${dt.getDate()} ${m[dt.getMonth()]}`;}
 
-// เปลี่ยนไปบันทึกข้อมูลลงฐานข้อมูล IndexedDB ผ่าน localForage ช่วยป้องกัน Safari/iOS ลบข้อมูลแบบสุ่ม
+// ฟังก์ชันเซฟข้อมูลขึ้น Cloud และสำรองลงเครื่อง (IndexedDB)
 async function saveState(){
-  try{ await localforage.setItem(STORE_KEY, state); }catch(e){ console.error('Save error', e); }
+  try{ 
+    await DOC_REF.set(state); // อัปเดตข้อมูลขึ้น Firebase
+    await localforage.setItem(STORE_KEY, state); // เก็บสำรองไว้ในเครื่อง
+  }catch(e){ 
+    console.error('Cloud save error, fallback to local:', e); 
+    await localforage.setItem(STORE_KEY, state);
+  }
 }
 
-async function initApp() {
-  try {
-    const s = await localforage.getItem(STORE_KEY);
-    if(s) state = s;
-    else state = {checks:{},dateStamp:todayStr(),history:SEED_HISTORY.slice(),custom:{},body:SEED_BODY.slice(),notes:{}};
-  } catch(e) {
-    state = {checks:{},dateStamp:todayStr(),history:SEED_HISTORY.slice(),custom:{},body:SEED_BODY.slice(),notes:{}};
-  }
+// ฟังก์ชันดึงข้อมูลและเฝ้าดูการเปลี่ยนแปลงจาก Cloud แบบ Real-time
+function initApp() {
+  DOC_REF.onSnapshot(async (doc) => {
+    if (doc.exists) {
+      state = doc.data();
+    } else {
+      const local = await localforage.getItem(STORE_KEY);
+      state = local || {checks:{},dateStamp:todayStr(),history:SEED_HISTORY.slice(),custom:{},body:SEED_BODY.slice(),notes:{}};
+      await saveState(); // ส่งข้อมูลเริ่มต้นขึ้น Cloud
+    }
 
-  if(!state.history)state.history=SEED_HISTORY.slice();
-  if(!state.custom)state.custom={};
-  if(!state.body)state.body=SEED_BODY.slice();
-  if(!state.notes)state.notes={};
-  
-  if(state.dateStamp!==todayStr()){state.checks={};state.dateStamp=todayStr();saveState();}
+    if(!state.history)state.history=SEED_HISTORY.slice();
+    if(!state.custom)state.custom={};
+    if(!state.body)state.body=SEED_BODY.slice();
+    if(!state.notes)state.notes={};
+    
+    if(state.dateStamp!==todayStr()){
+      state.checks={};
+      state.dateStamp=todayStr();
+      await saveState();
+    }
 
-  // เริ่มต้นสร้างหน้าตาเว็บแอปหลังจากที่ดึงข้อมูลจากฐานข้อมูลเสร็จสิ้น
-  buildDaypick();
-  pick(DAY_BY_DOW[new Date().getDay()]);
+    buildDaypick();
+    pick(cur || DAY_BY_DOW[new Date().getDay()]);
+    
+    if(curPage==='history') renderHistory();
+    if(curPage==='stats') statsTab(curStatsTab);
+    if(curPage==='body') renderBody();
+
+  }, async (error) => {
+    console.error("Firebase listen failed, using offline local storage:", error);
+    const local = await localforage.getItem(STORE_KEY);
+    state = local || {checks:{},dateStamp:todayStr(),history:SEED_HISTORY.slice(),custom:{},body:SEED_BODY.slice(),notes:{}};
+    buildDaypick();
+    pick(DAY_BY_DOW[new Date().getDay()]);
+  });
 }
 
 function fmt(n){return parseFloat(n.toFixed(2));}
@@ -719,7 +765,6 @@ function showPlates(wtStr,oneSide){
 function editExercise(dayKey,exName){
   const w=getWorkout(dayKey);const e=[...w.ex,...w.bonus].find(x=>x.n===exName);if(!e)return;
   const body=document.getElementById('modalBody');
-  // แก้ไขน้ำหนักท่าทางให้ใช้ type="number" inputmode="decimal" บังคับให้ iPad ขึ้น Numeric keyboard ทศนิยมทันที
   body.innerHTML=`<div class="modal-handle"></div><div class="modal-title">${e.n}</div>
     <div class="field-row">
       <div class="field"><div class="field-lbl">น้ำหนัก (kg)</div><input type="number" inputmode="decimal" id="ed-wt" value="${e.wt}"></div>
@@ -916,13 +961,12 @@ function renderBody(){
 }
 function openAddBody(){
   const body=document.getElementById('modalBody');
-  // ปรับคุณสมบัติ Input บันทึกผลชั่งทั้งหมดให้เรียกใช้งาน Numpad พร้อมปุ่มทศนิยมบน iPad ทันทีด้วย inputmode="decimal"
   body.innerHTML=`<div class="modal-handle"></div><div class="modal-title">บันทึกผลชั่ง</div>
     <div class="field"><div class="field-lbl">วันที่</div><input type="date" id="bd-date" value="${todayStr()}"></div>
     <div class="field-row"><div class="field"><div class="field-lbl">น้ำหนัก (kg)</div><input type="number" inputmode="decimal" step="0.01" id="bd-weight"></div><div class="field"><div class="field-lbl">Body fat (%)</div><input type="number" inputmode="decimal" step="0.1" id="bd-fat"></div></div>
     <div class="field-row"><div class="field"><div class="field-lbl">Muscle (kg)</div><input type="number" inputmode="decimal" step="0.01" id="bd-muscle"></div><div class="field"><div class="field-lbl">Visceral fat</div><input type="number" inputmode="numeric" id="bd-visceral"></div></div>
     <div class="field"><div class="field-lbl">Body score</div><input type="number" id="bd-score"></div>
-    <div class="modal-actions"><button class="btn btn-save" onclick="saveBody()">บันทึก</button><button class="btn btn-ghost" onclick="openAddBody()">ล้าง</button></div>`;
+    <div class="modal-actions"><button class="btn btn-save" onclick="saveBody()">บันทึก</button><button class="btn btn-ghost" onclick="closeModal()">ยกเลิก</button></div>`;
   openModal();
 }
 function saveBody(){
@@ -948,7 +992,17 @@ function exportJson(){download('workout_backup.json',JSON.stringify(state,null,2
 function importJson(ev){
   const file=ev.target.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=e=>{try{const data=JSON.parse(e.target.result);if(data.history){state=data;saveState();showToast('Import สำเร็จ ✓');switchPage('history');}else showToast('ไฟล์ไม่ถูกต้อง');}catch(err){showToast('อ่านไฟล์ไม่ได้');}};
+  reader.onload=async e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(data.history){
+        state=data;
+        await saveState(); // อัปโหลดไฟล์ JSON ที่ import เข้าไปที่ Cloud ทันที
+        showToast('Import สำเร็จ ✓');
+        switchPage('history');
+      }else showToast('ไฟล์ไม่ถูกต้อง');
+    }catch(err){showToast('อ่านไฟล์ไม่ได้');}
+  };
   reader.readAsText(file);
 }
 function download(name,content,type){
@@ -956,13 +1010,13 @@ function download(name,content,type){
   const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
 }
 async function resetAll(){
-  if(confirm('ล้างข้อมูลทั้งหมด? ไม่สามารถกู้คืนได้ (แนะนำ backup ก่อน)')){
-    await localforage.removeItem(STORE_KEY);
+  if(confirm('ล้างข้อมูลทั้งหมดทั้งบน Cloud และในเครื่อง? ไม่สามารถกู้คืนได้')){
     state = {checks:{},dateStamp:todayStr(),history:SEED_HISTORY.slice(),custom:{},body:SEED_BODY.slice(),notes:{}};
+    try { await DOC_REF.delete(); } catch(e){} // ลบข้อมูลใน Firebase
+    await localforage.removeItem(STORE_KEY);   // ลบข้อมูลในเครื่อง
     await saveState();
     switchPage('today');
-    showToast('ล้างข้อมูลแล้ว');
-    initApp();
+    showToast('ล้างข้อมูลเรียบร้อยแล้ว');
   }
 }
 
@@ -984,7 +1038,6 @@ function closeModal(){document.getElementById('modalBg').classList.remove('show'
 const R=19,CIRC=2*Math.PI*R;
 document.getElementById('ring').style.strokeDasharray=CIRC;
 
-// เพิ่มการตรวจสอบและเคลียร์ตัวแปร restTimer ให้สมบูรณ์ ป้องกันแอนิเมชัน Rest ค้างในลูปถัดไป
 function startRest(){
   restLeft=90;restTotal=90;
   const t=document.getElementById('timer');
@@ -1000,7 +1053,6 @@ function startRest(){
 function tickRest(){const m=Math.floor(restLeft/60),s=restLeft%60;document.getElementById('timerTime').textContent=m+':'+String(s).padStart(2,'0');document.getElementById('ring').style.strokeDashoffset=CIRC*(1-restLeft/restTotal);if(restLeft<=10)document.getElementById('timer').classList.add('urgent');if(restLeft<=0){stopRest();return;}restLeft--;}
 function addRest(n){restLeft+=n;restTotal=Math.max(restTotal,restLeft);tickRest();}
 
-// การล้างสถานะ Rest Timer ปลุกคืนค่าเป็น null อย่างสมบูรณ์แบบ
 function stopRest(){
   if(restTimer){
     clearInterval(restTimer);
@@ -1012,7 +1064,7 @@ function stopRest(){
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 function resetDay(){const all=[...getWorkout(cur).ex,...getWorkout(cur).bonus];state.checks[cur]=all.map(e=>new Array(e.sets).fill(false));saveState();renderToday();showToast('ล้างเซตแล้ว');}
 
-// เริ่มต้นแอปพลิเคชันผ่านระบบดึงข้อมูลจากฐานข้อมูล IndexedDB
+// เริ่มต้นแอปพลิเคชันและเชื่อมต่อ Cloud
 initApp();
 
 </script>
