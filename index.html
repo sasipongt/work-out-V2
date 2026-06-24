@@ -536,11 +536,12 @@ let progChart=null,volChart=null,bcChart=null;
 function todayStr(){return new Date().toISOString().slice(0,10);}
 function thaiDate(d){const dt=d?new Date(d):new Date();const m=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];return `${DOW_LABELS[dt.getDay()]} ${dt.getDate()} ${m[dt.getMonth()]}`;}
 
-// ฟังก์ชันเซฟข้อมูลขึ้น Cloud และสำรองลงเครื่อง (IndexedDB)
+// ฟังก์ชันเซฟข้อมูลขึ้น Cloud และสำรองลงเครื่อง
 async function saveState(){
   try{ 
-    await DOC_REF.set(state); // อัปเดตข้อมูลขึ้น Firebase
-    await localforage.setItem(STORE_KEY, state); // เก็บสำรองไว้ในเครื่อง
+    // 💡 แก้ไข: แปลง state ทั้งก้อนเป็นข้อความ (JSON String) เพื่อเลี่ยงกฎ Nested Array ของ Firebase
+    await DOC_REF.set({ payload: JSON.stringify(state) }); 
+    await localforage.setItem(STORE_KEY, state); 
   }catch(e){ 
     console.error('Cloud save error, fallback to local:', e); 
     showToast('⚠️ Offline: บันทึกลงเครื่องแล้ว');
@@ -553,11 +554,17 @@ function initApp() {
   DOC_REF.onSnapshot(async (doc) => {
     const isExists = typeof doc.exists === 'function' ? doc.exists() : doc.exists;
     if (isExists) {
-      state = doc.data();
+      const cloudData = doc.data();
+      // 💡 แก้ไข: แปลงข้อความกลับมาเป็นก้อนข้อมูล (Object) เพื่อใช้งานในแอป
+      if (cloudData.payload) {
+        state = JSON.parse(cloudData.payload);
+      } else {
+        state = cloudData; 
+      }
     } else {
       const local = await localforage.getItem(STORE_KEY);
       state = local || {checks:{},dateStamp:todayStr(),history:SEED_HISTORY.slice(),custom:{},body:SEED_BODY.slice(),notes:{}};
-      await saveState(); // ส่งข้อมูลเริ่มต้นขึ้น Cloud
+      await saveState(); 
     }
 
     if(!state.history)state.history=SEED_HISTORY.slice();
