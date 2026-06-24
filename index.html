@@ -509,7 +509,7 @@ const SEED_BODY=[
 ];
 
 // =========================================================
-// 1. ข้อมูลเชื่อมต่อ Firebase ของคุณ (ถูกต้องแล้ว)
+// 1. นำข้อมูล Firebase Configuration ของคุณมาวางแทนที่ตรงนี้
 // =========================================================
 const firebaseConfig = {
   apiKey: "AIzaSyB-wjKlyhB5cnBfCsGY0FdMToWBJDOLNNU",
@@ -536,30 +536,28 @@ let progChart=null,volChart=null,bcChart=null;
 function todayStr(){return new Date().toISOString().slice(0,10);}
 function thaiDate(d){const dt=d?new Date(d):new Date();const m=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];return `${DOW_LABELS[dt.getDay()]} ${dt.getDate()} ${m[dt.getMonth()]}`;}
 
-// ฟังก์ชันเซฟข้อมูลขึ้น Cloud และสำรองลงเครื่อง 
+// ฟังก์ชันเซฟข้อมูลขึ้น Cloud และสำรองลงเครื่อง (IndexedDB)
 async function saveState(){
   try{ 
-    await DOC_REF.set(state); 
-    await localforage.setItem(STORE_KEY, state); 
+    await DOC_REF.set(state); // อัปเดตข้อมูลขึ้น Firebase
+    await localforage.setItem(STORE_KEY, state); // เก็บสำรองไว้ในเครื่อง
   }catch(e){ 
     console.error('Cloud save error, fallback to local:', e); 
-    // หาก Firebase ติด Rules ระบบจะเซฟลงเครื่องแล้วเด้งเตือนสีแดงให้ทราบ
-    showToast('⚠️ Offline: บันทึกลงเครื่องแล้ว (เช็คเน็ต / Rules)');
+    showToast('⚠️ Offline: บันทึกลงเครื่องแล้ว');
     await localforage.setItem(STORE_KEY, state);
   }
 }
 
-// ฟังก์ชันดึงข้อมูลแบบ Real-time
+// ฟังก์ชันดึงข้อมูลและเฝ้าดูการเปลี่ยนแปลงจาก Cloud แบบ Real-time
 function initApp() {
   DOC_REF.onSnapshot(async (doc) => {
-    // ดึงข้อมูลกรณีที่การเชื่อมต่อสมบูรณ์
     const isExists = typeof doc.exists === 'function' ? doc.exists() : doc.exists;
     if (isExists) {
       state = doc.data();
     } else {
       const local = await localforage.getItem(STORE_KEY);
       state = local || {checks:{},dateStamp:todayStr(),history:SEED_HISTORY.slice(),custom:{},body:SEED_BODY.slice(),notes:{}};
-      await saveState(); 
+      await saveState(); // ส่งข้อมูลเริ่มต้นขึ้น Cloud
     }
 
     if(!state.history)state.history=SEED_HISTORY.slice();
@@ -581,12 +579,8 @@ function initApp() {
     if(curPage==='body') renderBody();
 
   }, async (error) => {
-    // 🔴 โค้ดส่วนนี้จะทำงานเมื่อ Firebase เตะเราออกเนื่องจากติดปัญหา "Rules"
-    console.error("Firebase listen failed:", error);
-    setTimeout(() => {
-        showToast('🔴 Offline: โดนบล็อกการซิงค์ (โปรดเช็คแท็บ Rules บน Firebase)');
-    }, 1500);
-
+    console.error("Firebase listen failed, using offline local storage:", error);
+    showToast('🔴 Offline Mode');
     const local = await localforage.getItem(STORE_KEY);
     state = local || {checks:{},dateStamp:todayStr(),history:SEED_HISTORY.slice(),custom:{},body:SEED_BODY.slice(),notes:{}};
     buildDaypick();
