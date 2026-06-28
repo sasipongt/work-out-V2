@@ -42,8 +42,6 @@
   .daypick{display:flex;gap:6px;margin:22px 0 18px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
   .daypick::-webkit-scrollbar{display:none}
   .dp{flex:0 0 auto;min-width:50px;padding:9px 4px;border:0.5px solid var(--line2);border-radius:22px;background:transparent;font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.06em;color:var(--faint);cursor:pointer;text-align:center;text-transform:uppercase;position:relative;transition:all 0.2s}
-  .dp .marker{position:absolute;top:7px;right:10px;width:5px;height:5px;border-radius:50%;background:var(--gold);opacity:0}
-  .dp.istoday .marker{opacity:1}
   .dp.on.tone-gold{border-color:var(--gold);background:rgba(200,162,60,0.1);color:var(--gold)}
   .dp.on.tone-rust{border-color:var(--rust-bright);background:rgba(216,99,44,0.1);color:var(--rust-bright)}
   .dp.on.tone-cream{border-color:#C9C4B8;background:rgba(201,196,184,0.08);color:#C9C4B8}
@@ -690,13 +688,39 @@ function calcPlates(target,oneSide){
 }
 
 /* ── DAYPICK ── */
-function buildDaypick(){
-  const dp=document.getElementById('daypick');dp.innerHTML='';
-  for(let i=0;i<7;i++){const key=DOW_MAP[i];const el=document.createElement('button');el.className='dp';el.dataset.dow=i;el.dataset.key=key;el.innerHTML=`${DOW_LABELS[i]}<span class="marker"></span>`;el.onclick=()=>pick(key);dp.appendChild(el);}
+const PLAN_OPTIONS = [
+  { key: 'A', label: 'Day A' },
+  { key: 'B', label: 'Day B' },
+  { key: 'C', label: 'Day C' },
+  { key: 'cardio', label: 'Cardio' },
+  { key: 'rest', label: 'Rest' }
+];
+
+function buildDaypick() {
+  const dp = document.getElementById('daypick');
+  dp.innerHTML = '';
+  
+  PLAN_OPTIONS.forEach(opt => {
+    const el = document.createElement('button');
+    // ใช้คลาสเดิมเพื่อให้สไตล์ยังคงความสวยงาม
+    el.className = 'dp'; 
+    el.dataset.key = opt.key;
+    el.innerHTML = opt.label;
+    el.onclick = () => pick(opt.key);
+    dp.appendChild(el);
+  });
 }
-function pick(key){
-  cur=key;const tone=WORKOUTS[key]?.tone||GUIDES[key]?.tone||'gold';
-  document.querySelectorAll('.dp').forEach(el=>{const isCur=el.dataset.key===key;el.className='dp'+(isCur?' on tone-'+tone:'');if(parseInt(el.dataset.dow)===new Date().getDay())el.classList.add('istoday');});
+
+function pick(key) {
+  cur = key; 
+  const tone = WORKOUTS[key]?.tone || GUIDES[key]?.tone || 'gold';
+  
+  // อัปเดตสถานะปุ่มที่ถูกเลือก
+  document.querySelectorAll('.dp').forEach(el => {
+    const isCur = el.dataset.key === key;
+    el.className = 'dp' + (isCur ? ' on tone-' + tone : '');
+  });
+  
   renderToday();
 }
 
