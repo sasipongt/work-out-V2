@@ -297,6 +297,37 @@
     #content{grid-template-columns:1fr}
     #histList,#prList{columns:1}
   }
+  /* ประวัติ 3 ครั้งล่าสุด */
+  .past-records {
+    background: rgba(200, 162, 60, 0.03);
+    border: 0.5px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .past-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+  }
+  .past-date {
+    color: var(--faint);
+    font-family: 'Oswald', sans-serif;
+    letter-spacing: 0.05em;
+  }
+  .past-val {
+    color: var(--cream);
+    font-family: 'Oswald', sans-serif;
+    font-weight: 500;
+  }
+  .past-val b {
+    color: var(--gold);
+    font-weight: 600;
+  }
 </style>
 </head>
 <body>
@@ -676,7 +707,33 @@ function suggestWeight(e){
   }
   return {wt:last.wt,reason:`คงน้ำหนัก ${last.wt}kg ให้ครบก่อน`};
 }
+// แปลงวันที่ให้สั้นลงสำหรับแสดงในกล่องเล็ก (เช่น "23 มิ.ย.")
+function shortDate(dStr) {
+  const dt = new Date(dStr);
+  const m = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return `${dt.getDate()} ${m[dt.getMonth()]}`;
+}
 
+// ดึงประวัติ 3 ครั้งล่าสุดของท่านั้นๆ
+function getLast3Entries(exName) {
+  const past = [];
+  // กรองเฉพาะประวัติที่มีการยกเวท และเรียงจากล่าสุดไปเก่าสุด
+  const sorted = [...state.history].filter(h => h.ex).sort((a,b) => b.date.localeCompare(a.date));
+  
+  for(const h of sorted) {
+    const e = h.ex.find(x => x[0] === exName);
+    if(e) {
+      past.push({
+        date: h.date,
+        wt: e[1],
+        sets: e[2],
+        reps: e[3]
+      });
+      if(past.length === 3) break; // เอาแค่ 3 ครั้ง
+    }
+  }
+  return past;
+}
 /* ── PLATE CALC ── */
 function calcPlates(target,oneSide){
   const per=oneSide?(target-BAR):(target-BAR)/2;
@@ -785,6 +842,17 @@ function exCard(e,i,isBonus){
   const sug=e.wt!=='BW'?suggestWeight(e):null;
   const showSug=sug&&parseFloat(sug.wt)!==parseFloat(e.wt);
   const isOne=ONE_SIDE_EX.includes(e.n);
+  
+  // --- ส่วนที่เพิ่มใหม่: สร้าง HTML สำหรับประวัติ 3 ครั้งล่าสุด ---
+  const past3 = getLast3Entries(e.n);
+  let pastHtml = '';
+  if(past3.length > 0) {
+    pastHtml = `<div class="past-records">
+      ${past3.map(p => `<div class="past-row"><span class="past-date">${shortDate(p.date)}</span> <span class="past-val"><b>${p.wt==='BW'?'BW':p.wt+'kg'}</b> × ${p.sets}×${p.reps}</span></div>`).join('')}
+    </div>`;
+  }
+  // --------------------------------------------------------
+
   return `<div class="ex${allDone?' done':''}${isBonus?' bonus':''}" id="ex-${i}">
     <div class="ex-head">
       <div><div class="ex-name" onclick="toggleHow(${i})">${e.n}${isPR?'<span class="pr-flag">PR</span>':''}</div><div class="ex-cue">${e.cue}</div></div>
@@ -796,6 +864,9 @@ function exCard(e,i,isBonus){
       ${e.wt!=='BW'&&!isNaN(parseFloat(e.wt))?`<span class="plate-btn" onclick="showPlates('${e.wt}',${isOne})"><svg viewBox="0 0 24 24"><rect x="2" y="8" width="3" height="8"></rect><rect x="19" y="8" width="3" height="8"></rect><rect x="6" y="5" width="3" height="14"></rect><rect x="15" y="5" width="3" height="14"></rect><line x1="9" y1="12" x2="15" y2="12"></line></svg>แผ่น</span>`:''}
       ${e.plate?`<span style="font-size:11px;color:var(--muted)">${e.plate}</span>`:''}
     </div>
+    
+    ${pastHtml} <!-- แทรกกล่องประวัติตรงนี้ -->
+    
     <div class="dots">${dots}</div>
     <button class="rest-trigger" onclick="startRest()"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2M9 2h6"></path></svg>Rest 90s</button>
     <button class="how-toggle" onclick="toggleHow(${i})">▾ วิธีทำ</button>
