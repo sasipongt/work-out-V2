@@ -198,6 +198,11 @@
   .plate-list-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--line);font-size:13px}
   .plate-list-row:last-child{border-bottom:none}
 
+  .pc-hint{font-size:11px;color:var(--faint);margin:-6px 0 18px;line-height:1.6}
+  .pc-empty{text-align:center;padding:40px 18px;color:var(--faint);font-size:13px;line-height:1.7}
+  .pc-step-badge{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase}
+  .pc-warn{font-size:11px;color:var(--rust-bright);margin-top:6px}
+
   .toast{position:fixed;left:50%;transform:translateX(-50%) translateY(-200%);top:calc(12px + env(safe-area-inset-top));background:var(--card-done);border:0.5px solid var(--line2);color:var(--cream);font-size:13px;padding:12px 20px;border-radius:12px;z-index:300;transition:transform 0.4s cubic-bezier(0.16,1,0.3,1);max-width:90%;text-align:center}
   .toast.show{transform:translateX(-50%) translateY(0)}
 
@@ -391,6 +396,29 @@
   <div id="bcList"></div>
 </div>
 
+<div class="page" id="page-plate">
+  <h1 class="page-title">Plate Calc</h1>
+  <div class="page-sub">คำนวณแผ่นน้ำหนัก 5 step ถัดไป</div>
+
+  <div class="seg">
+    <button class="seg-btn on" id="seg-plate-bb" onclick="platesModeSet('barbell')">Barbell</button>
+    <button class="seg-btn" id="seg-plate-db" onclick="platesModeSet('dumbbell')">Dumbbell</button>
+  </div>
+
+  <div class="seg" id="pc-oneside-wrap">
+    <button class="seg-btn on" id="seg-plate-both" onclick="platesSideSet(false)">ทั้งสองข้าง</button>
+    <button class="seg-btn" id="seg-plate-one" onclick="platesSideSet(true)">ด้านเดียว</button>
+  </div>
+
+  <div class="field">
+    <div class="field-lbl">น้ำหนักที่ต้องการ (kg)</div>
+    <input type="number" inputmode="decimal" step="0.5" id="pc-target" placeholder="เช่น 50" oninput="calcPlateSteps()">
+  </div>
+  <div class="pc-hint" id="pc-hint">หักน้ำหนัก Barbell 6.5 kg · คำนวณเพิ่มทีละ 1 kg จำนวน 5 step</div>
+
+  <div id="pc-results"><div class="pc-empty">กรอกน้ำหนักที่ต้องการด้านบน<br>เพื่อดูแผ่นที่ต้องใส่ 5 step ถัดไป</div></div>
+</div>
+
 <div class="page" id="page-more">
   <h1 class="page-title">More</h1>
   <div class="page-sub">Export · backup · ข้อมูล</div>
@@ -417,6 +445,7 @@
   <button class="nav-item" id="nav-history" onclick="switchPage('history')"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 2M3 12a9 9 0 109-9 9 9 0 00-9 9zM3 12H1m2 0l2-2"></path></svg><span class="nav-label">History</span></button>
   <button class="nav-item" id="nav-stats" onclick="switchPage('stats')"><svg viewBox="0 0 24 24"><path d="M3 3v18h18M7 14l4-4 3 3 5-6"></path></svg><span class="nav-label">Stats</span></button>
   <button class="nav-item" id="nav-body" onclick="switchPage('body')"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"></circle><path d="M12 8v8M8 12h8M9 21l3-5 3 5"></path></svg><span class="nav-label">Body</span></button>
+  <button class="nav-item" id="nav-plate" onclick="switchPage('plate')"><svg viewBox="0 0 24 24"><rect x="2" y="8" width="3" height="8"></rect><rect x="19" y="8" width="3" height="8"></rect><rect x="6" y="5" width="3" height="14"></rect><rect x="15" y="5" width="3" height="14"></rect><line x1="9" y1="12" x2="15" y2="12"></line></svg><span class="nav-label">Plate</span></button>
   <button class="nav-item" id="nav-more" onclick="switchPage('more')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg><span class="nav-label">More</span></button>
 </div>
 
@@ -735,12 +764,13 @@ function getLast3Entries(exName) {
   return past;
 }
 /* ── PLATE CALC ── */
-function calcPlates(target,oneSide){
-  const per=oneSide?(target-BAR):(target-BAR)/2;
-  if(per<0)return{used:[],achieved:target,exact:true};
+function calcPlates(target,oneSide,isBarbell=true){
+  const bar=isBarbell?BAR:0;
+  const per=oneSide?(target-bar):(target-bar)/2;
+  if(per<0)return{used:[],achieved:target,exact:true,per:0};
   let rem=fmt(per);const used=[];
   for(const p of PLATES){if(rem<=0.001)break;const n=Math.min(p.av,Math.floor(rem/p.w+0.001));if(n>0){used.push({...p,n});rem=fmt(rem-n*p.w);}}
-  const achieved=fmt(BAR+(oneSide?(per-rem):(per-rem)*2));
+  const achieved=fmt(bar+(oneSide?(per-rem):(per-rem)*2));
   return{used,achieved,exact:rem<=0.001,per:fmt(per-rem)};
 }
 
@@ -911,6 +941,62 @@ function showPlates(wtStr,oneSide){
     ${used.map(p=>`<div class="plate-list-row"><span style="color:var(--cream)">${p.w} kg</span><span style="color:var(--gold);font-family:'Oswald'">× ${p.n}</span></div>`).join('')||'<div style="color:var(--faint);font-size:13px">Barbell เปล่า</div>'}
     <div class="modal-actions"><button class="btn btn-ghost" style="width:100%;flex:1" onclick="closeModal()">ปิด</button></div>`;
   openModal();
+}
+
+/* ── PLATE CALCULATOR TAB ── */
+let pcMode='barbell',pcOneSide=false;
+function platesModeSet(mode){
+  pcMode=mode;
+  document.getElementById('seg-plate-bb').classList.toggle('on',mode==='barbell');
+  document.getElementById('seg-plate-db').classList.toggle('on',mode==='dumbbell');
+  document.getElementById('pc-oneside-wrap').style.display=mode==='barbell'?'flex':'none';
+  document.getElementById('pc-hint').textContent=mode==='barbell'
+    ?'หักน้ำหนัก Barbell 6.5 kg · คำนวณเพิ่มทีละ 1 kg จำนวน 5 step'
+    :'Dumbbell — ไม่หักน้ำหนักบาร์ · คำนวณเพิ่มทีละ 1 kg จำนวน 5 step';
+  calcPlateSteps();
+}
+function platesSideSet(one){
+  pcOneSide=one;
+  document.getElementById('seg-plate-both').classList.toggle('on',!one);
+  document.getElementById('seg-plate-one').classList.toggle('on',one);
+  calcPlateSteps();
+}
+function calcPlateSteps(){
+  const box=document.getElementById('pc-results');
+  const raw=document.getElementById('pc-target').value;
+  const val=parseFloat(raw);
+  if(raw===''||isNaN(val)||val<=0){
+    box.innerHTML='<div class="pc-empty">กรอกน้ำหนักที่ต้องการด้านบน<br>เพื่อดูแผ่นที่ต้องใส่ 5 step ถัดไป</div>';
+    return;
+  }
+  const isBar=pcMode==='barbell';
+  const sideLbl=n=>isBar?(pcOneSide?`แผ่นด้านเดียว (${n} kg)`:`แต่ละข้าง (${n} kg)`):(pcOneSide?`รวม (${n} kg)`:`แต่ละข้าง (${n} kg)`);
+  let html='';
+  for(let i=0;i<5;i++){
+    const target=fmt(val+i);
+    const {used,achieved,exact,per}=calcPlates(target,pcOneSide,isBar);
+    let vis='';
+    if(used.length){
+      const mk=(p)=>Array(p.n).fill('').map(()=>`<span class="pv-plate" style="background:${p.c};width:${p.w>=5?'22px':'17px'};height:${20+p.w*1.6}px">${p.w}</span>`).join('');
+      if(pcOneSide){
+        vis=`<div class="plate-vis">${isBar?'<span class="pv-collar"></span><span class="pv-bar"></span><span class="pv-collar"></span>':''}${used.map(mk).join('')}</div>`;
+      }else{
+        const left=[...used].reverse().map(mk).join('');const right=used.map(mk).join('');
+        vis=`<div class="plate-vis">${left}${isBar?'<span class="pv-collar"></span><span class="pv-bar"></span><span class="pv-collar"></span>':''}${right}</div>`;
+      }
+    }
+    html+=`<div class="ex" style="cursor:default">
+      <div class="ex-head">
+        <div class="ex-name" style="font-size:16px"><span class="pc-step-badge">Step ${i+1}</span><br>${target} kg</div>
+        <div class="ex-rx">${achieved} kg</div>
+      </div>
+      ${!exact?`<div class="pc-warn">⚠ ${target} kg ไม่พอดี — ใช้น้ำหนักที่พอดีที่สุดคือ ${achieved} kg</div>`:''}
+      ${vis}
+      <div style="font-size:12px;color:var(--muted);margin:10px 0 6px">${sideLbl(per)}</div>
+      ${used.map(p=>`<div class="plate-list-row"><span style="color:var(--cream)">${p.w} kg</span><span style="color:var(--gold);font-family:'Oswald'">× ${p.n}</span></div>`).join('')||`<div style="color:var(--faint);font-size:13px">${isBar?'Barbell เปล่า':'ไม่ต้องใส่แผ่น'}</div>`}
+    </div>`;
+  }
+  box.innerHTML=html;
 }
 
 /* ── EDIT ── */
