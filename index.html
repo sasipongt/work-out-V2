@@ -478,7 +478,7 @@ const WORKOUTS={
     {n:'BB Bench Press',cue:'ลด bar 4 วิ แตะอก press เร็ว',wt:'28.5',sets:4,reps:6,plate:'แต่ละข้าง: 10 + 1',how:['นอนหงาย มือกว้างกว่าไหล่นิดๆ','ลด bar ลงช้า 4 วิ จนแตะอก','press ขึ้นเร็ว ข้อศอกเอนเข้า ~75°'],tip:'arch หลังเล็กน้อย ปกป้องไหล่'},
     {n:'BB Overhead Press',cue:'strict press ไม่ leg drive',wt:'19.5',sets:3,reps:8,plate:'แต่ละข้าง: 5 + 1 + 0.5',how:['ยืนตรง จับ bar กว้างกว่าไหล่','press ขึ้นตรง bar เลยศีรษะ','lockout ข้อศอกด้านบน'],tip:'หน้าท้องเกร็ง อย่าให้หลังแอ่น'},
     {n:'DB Lateral Raise',cue:'ยกช้า ไม่ swing',wt:'5',sets:3,reps:12,plate:'DB ข้างละ 5',how:['ยืนตรง DB ข้างลำตัว','ยกออกข้างถึงระดับไหล่','ลงช้า 3 วิ'],tip:'ถ้า swing = ลดน้ำหนัก'},
-    {n:'Skull Crusher',cue:'ข้อศอกชี้ขึ้น ไม่บาน',wt:'14.5',sets:3,reps:12,plate:'แต่ละข้าง: 2.5 + 1 + 0.5',how:['นอน bench จับ bar neutral grip','ลด bar ลงหน้าผาก ช้า 3 วิ','press กลับด้วย tricep'],tip:'neutral grip ปกป้องข้อมือ'},
+    {n:'Rope Pushdown',cue:'ข้อศอกแนบลำตัว บีบ tricep ล่างสุด',wt:'10',sets:3,reps:12,plate:'Cable stack (ปรับตามเครื่องจริง)',how:['ยืนหน้า cable จับเชือกคู่ ข้อศอกแนบลำตัว','ดันลงจนแขนเหยียดตรง กางปลายเชือกออกเล็กน้อยด้านล่าง','ปล่อยขึ้นช้าควบคุม ข้อศอกอยู่กับที่'],tip:'ถ้าข้อศอกกางออกจากลำตัว = หนักเกิน'},
     {n:'DB Overhead Tricep Ext',cue:'long head — ยืดเต็มที่',wt:'8',sets:3,reps:12,plate:'DB ชิ้นเดียว สองมือ',how:['จับ DB ชิ้นเดียวสองมือ ยกเหนือหัว','งอข้อศอกลงหลัง ช้า 3 วิ','extend กลับ'],tip:'ข้อศอกอยู่กับที่'},
     {n:'Dead Bug',cue:'core — กดหลังแนบพื้น',wt:'BW',sets:3,reps:10,plate:'',how:['นอนหงาย แขนชี้ขึ้น เข่า 90°','กดหลังแนบพื้นตลอด','ยืดแขนซ้าย+ขาขวาพร้อมกัน'],tip:'หลังลอย = ทำช้าลง'},
     {n:'Plank',cue:'ลำตัวตรง เกร็ง glute',wt:'BW',sets:3,reps:45,plate:'',how:['ข้อศอกแนบพื้น ลำตัวตรง','เกร็ง core + glute ตลอด'],tip:'สะโพกหย่อน = พักก่อน'},
@@ -493,11 +493,11 @@ const WORKOUTS={
     {n:'Bench Leg Raise',cue:'core — หลังแนบม้านั่ง',wt:'BW',sets:3,reps:15,plate:'',how:['นอน bench จับขอบด้านหัว','ยกขาตรง 90° ช้าๆ','หลังแนบม้านั่ง'],tip:'หลังลอย = งอเข่า'},
     {n:'Calf Raise',cue:'ยกส้นเท้าสูงสุด ค้าง 1 วิ',wt:'BW',sets:4,reps:15,plate:'',how:['ยืนตรง ปลายเท้าวางขอบขั้นบันไดหรือพื้นเรียบ','ยกส้นเท้าขึ้นสูงสุด ค้าง 1 วิที่จุดบนสุด','ลดลงช้าๆ ให้ส้นเท้าต่ำกว่าจุดเริ่ม'],tip:'ถือ DB เพิ่มน้ำหนักได้เมื่อ BW เบาไป'},
   ],bonus:[]},
-  C:{title:'LB + CORE',tone:'rust',sub:'RDL · Incline · T-Bar · Quad · Tricep',ex:[
+  C:{title:'LB + CORE',tone:'rust',sub:'RDL · Incline · Lat Pulldown · Quad · Tricep',ex:[
     {n:'Romanian Deadlift',cue:'ลงจนตึง hamstring',wt:'40.5',sets:4,reps:8,plate:'แต่ละข้าง: 10 + 5 + 2',how:['ยืนตรง hinge สะโพกถอยหลัง','ลด bar ชิดขา จนตึง hamstring','ขึ้นโดย squeeze glute'],tip:'ไม่ต้องลงถึงพื้น'},
     {n:'Incline DB Press',cue:'bench 30-45°',wt:'14',sets:4,reps:8,plate:'DB ข้างละ 14',how:['bench 30-45° DB ระดับอก','press ขึ้น ควบคุม','ลงช้าจนยืด pec'],tip:'DB ดีกว่า BB เรื่องไหล่'},
-    {n:'T-Bar Row',cue:'ใส่แผ่นด้านเดียว',wt:'31.5',sets:4,reps:8,plate:'ด้านเดียว: 10 + 10 + 5',how:['เอียงตัว 45° จับ handle','ดึงเข้าอก ข้อศอกชิดลำตัว','squeeze สะบัก'],tip:'ระวังข้อมือ'},
-    {n:'Goblet Squat',cue:'quad — ถือ DB แนวตั้ง',wt:'18',sets:3,reps:12,plate:'DB ชิ้นเดียว แนวตั้ง',how:['ถือ DB แนวตั้งระดับอก','squat ลงลึก','ขึ้นเร็ว เน้น quad'],tip:'เพิ่ม quad frequency'},
+    {n:'Lat Pulldown',cue:'vertical pull — สะบักลงและเข้า',wt:'20',sets:4,reps:8,plate:'Cable stack (ปรับตามเครื่องจริง)',how:['นั่งจับ bar กว้างกว่าไหล่เล็กน้อย','ดึง bar ลงมาที่อกบน ศอกชี้ลงด้านหลัง ไม่ใช้แรงเหวี่ยง','ปล่อยขึ้นช้าควบคุม จนแขนเกือบเหยียดสุด'],tip:'ลำตัวนิ่ง อย่าโน้มถอยหลังมากเกินไป'},
+    {n:'Bulgarian Split Squat',cue:'unilateral — เข่าหน้าไม่บิดเข้าใน',wt:'9',sets:3,reps:10,plate:'DB ข้างละ 9 (ถือสองมือ ข้างลำตัว)',how:['วางหลังเท้าบนม้านั่ง (ใช้หลังเท้า ไม่ใช่ปลายเท้า)','ลงจนต้นขาหลังเกือบขนานพื้น เข่าหน้างอ ~90°','ดันพื้นขึ้นด้วยเท้าหน้า ทำครบเซตก่อนสลับข้าง'],tip:'สะโพกต้องขนานพื้นตลอด ห้ามบิด เริ่มน้ำหนักเบากว่า Goblet Squat เดิมเพราะโหลดต่อขาจริงหนักกว่า'},
     {n:'BB Reverse Curl',cue:'brachialis — grip คว่ำ',wt:'11.5',sets:3,reps:12,plate:'แต่ละข้าง: 2.5',how:['จับ bar pronated','ม้วนขึ้นช้า ข้อศอกแนบลำตัว','เป้า brachialis'],tip:'เน้น form มากกว่าน้ำหนัก'},
     {n:'DB Tricep Kickback',cue:'extend จนตรง',wt:'6',sets:3,reps:12,plate:'DB ข้างละ 6',how:['เอนตัวหน้า ต้นแขนชิดลำตัว','extend แขนไปหลังจนตรง','squeeze tricep'],tip:'ต้นแขนนิ่ง'},
     {n:'Ab Wheel Rollout',cue:'core — roll ช้าๆ',wt:'BW',sets:3,reps:10,plate:'',how:['คุกเข่า roll ออกช้าๆ','หยุดก่อนหน้าท้องแตะพื้น','ดึงกลับด้วย core'],tip:'roll ครึ่งทางก่อนได้'},
